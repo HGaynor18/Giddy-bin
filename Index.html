@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Peninsula View – Site Notes</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Site Notes">
+
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom) 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 40px;
+    }
+
+    header {
+      padding: 16px 0 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 { font-size: 1.35rem; margin: 0; }
+    .subtitle { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+
+    /* Navigation Tabs */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin: 14px 0;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+      font-weight: 600;
+      font-size: 0.82rem;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    /* Lot Grid Selector */
+    .lot-grid-container {
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .grid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .grid-info { font-size: 0.78rem; color: var(--muted); }
+    .lot-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .lot-btn {
+      padding: 10px 0;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .lot-btn.has-notes {
+      background: #dbeafe;
+      border-color: #3b82f6;
+      color: #1e40af;
+    }
+    .lot-btn.selected {
+      background: var(--primary) !important;
+      color: #fff !important;
+      border-color: var(--primary) !important;
+    }
+
+    /* Cards & Forms */
+    .card {
+      background: var(--card-bg);
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .card h3 { margin: 0 0 10px 0; font-size: 1rem; display: flex; justify-content: space-between; align-items: center; }
+
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      font-family: inherit;
+    }
+    textarea { min-height: 95px; resize: vertical; }
+
+    button.action-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 11px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      width: 100%;
+    }
+    button.secondary-btn {
+      background: #f1f5f9;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Checklists & Lists */
+    ul { list-style: none; padding: 0; margin: 0; }
+    li.item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.92rem;
+    }
+    li.item:last-child { border-bottom: none; }
+    li.item.done span.item-text {
+      text-decoration: line-through;
+      color: var(--muted);
+    }
+    .item-left { display: flex; align-items: center; gap: 10px; flex: 1; padding-right: 8px; }
+    .item-left input[type="checkbox"] { width: 18px; height: 18px; margin: 0; flex-shrink: 0; }
+    .badge {
+      font-size: 0.72rem;
+      background: #e2e8f0;
+      color: #334155;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 4px 6px;
+      color: var(--muted);
+    }
+    .delete-btn { color: #ef4444; font-weight: bold; font-size: 1.15rem; }
+    .empty-msg { font-size: 0.85rem; color: var(--muted); padding: 8px 0; }
+    .save-indicator { font-size: 0.75rem; color: #16a34a; font-weight: normal; display: none; }
+  </style>
+
+  <!-- Firebase Modular SDK (CDN for direct browser support) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push, remove, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBW4lwovKxYQBd4wp0s4FJ62kxJKomEw_g",
+      authDomain: "peninsulaview-notes.firebaseapp.com",
+      databaseURL: "https://peninsulaview-notes-default-rtdb.firebaseio.com",
+      projectId: "peninsulaview-notes",
+      storageBucket: "peninsulaview-notes.firebasestorage.app",
+      messagingSenderId: "1094982877861",
+      appId: "1:1094982877861:web:4405ccdf1dfee0f6ad834c"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let activeLot = 1;
+    let allLotsData = {};
+    let allMaterialsData = {};
+    let showAllNotesText = false;
+
+    // Switch Navigation Tabs
+    window.showTab = function(tabName, btnEl) {
+      document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(`${tabName}-section`).style.display = 'block';
+      btnEl.classList.add('active');
+    };
+
+    // Build 1–34 Unit Grid
+    const gridEl = document.getElementById('lot-grid');
+    for (let i = 1; i <= 34; i++) {
+      const btn = document.createElement('button');
+      btn.className = `lot-btn ${i === 1 ? 'selected' : ''}`;
+      btn.id = `lot-btn-${i}`;
+      btn.innerText = i;
+      btn.onclick = () => selectLot(i);
+      gridEl.appendChild(btn);
+    }
+
+    // Select a Unit Lot
+    window.selectLot = function(lotNumber) {
+      activeLot = lotNumber;
+      document.querySelectorAll('.lot-btn').forEach(b => b.classList.remove('selected'));
+      document.getElementById(`lot-btn-${lotNumber}`).classList.add('selected');
+      document.getElementById('current-lot-title').innerText = `Lot ${lotNumber} Notes`;
+
+      const noteVal = (allLotsData[lotNumber] && allLotsData[lotNumber].notes) ? allLotsData[lotNumber].notes : '';
+      document.getElementById('lot-note-input').value = noteVal;
+    };
+
+    // Save Unit Note
+    window.saveLotNote = function() {
+      const text = document.getElementById('lot-note-input').value;
+      set(ref(db, `lots/${activeLot}/notes`), text).then(() => {
+        const ind = document.getElementById('save-msg');
+        ind.style.display = 'inline';
+        setTimeout(() => ind.style.display = 'none', 1800);
+      });
+    };
+
+    // Toggle "All notes as text" view
+    window.toggleAllNotesText = function() {
+      showAllNotesText = !showAllNotesText;
+      const card = document.getElementById('all-notes-text-card');
+      card.style.display = showAllNotesText ? 'block' : 'none';
+      renderAllNotesText();
+    };
+
+    function renderAllNotesText() {
+      const container = document.getElementById('all-notes-text-body');
+      let lines = [];
+      for (let i = 1; i <= 34; i++) {
+        const note = allLotsData[i]?.notes?.trim();
+        if (note) {
+          lines.push(`<strong>Lot ${i}:</strong><br>${note.replace(/\n/g, '<br>')}`);
+        }
+      }
+      container.innerHTML = lines.length > 0 ? lines.join('<hr style="border:0;border-top:1px solid #e2e8f0;margin:10px 0;">') : '<div class="empty-msg">No unit notes recorded yet.</div>';
+    }
+
+    // Live Sync: All Lots (1–34)
+    onValue(ref(db, 'lots'), (snapshot) => {
+      allLotsData = snapshot.val() || {};
+      let count = 0;
+      for (let i = 1; i <= 34; i++) {
+        const btn = document.getElementById(`lot-btn-${i}`);
+        if (allLotsData[i] && allLotsData[i].notes && allLotsData[i].notes.trim() !== '') {
+          btn.classList.add('has-notes');
+          count++;
+        } else {
+          btn.classList.remove('has-notes');
+        }
+      }
+      document.getElementById('notes-status-badge').innerText = `${count} of 34 units have notes`;
+
+      // Update active input if not currently typing in it
+      if (document.activeElement !== document.getElementById('lot-note-input')) {
+        document.getElementById('lot-note-input').value = allLotsData[activeLot]?.notes || '';
+      }
+      if (showAllNotesText) renderAllNotesText();
+    });
+
+    // Live Sync: Morning Checks
+    onValue(ref(db, 'morningChecks'), (snapshot) => {
+      const list = document.getElementById('morning-checks-list');
+      list.innerHTML = '';
+      const data = snapshot.val() || {};
+      const entries = Object.entries(data);
+      if (entries.length === 0) {
+        list.innerHTML = '<li class="empty-msg">Nothing on this list yet.</li>';
+        return;
+      }
+      entries.forEach(([key, item]) => {
+        const li = document.createElement('li');
+        li.className = `item ${item.done ? 'done' : ''}`;
+        li.innerHTML = `
+          <div class="item-left">
+            <input type="checkbox" ${item.done ? 'checked' : ''} onchange="toggleMorningCheck('${key}', ${!item.done})">
+            <span class="item-text">${item.text}</span>
+            ${item.lot ? `<span class="badge">Unit ${item.lot}</span>` : ''}
+          </div>
+          <button class="icon-btn delete-btn" onclick="deleteMorningCheck('${key}')">×</button>
+        `;
+        list.appendChild(li);
+      });
+    });
+
+    window.addMorningCheck = function() {
+      const input = document.getElementById('check-input');
+      const lotInput = document.getElementById('check-lot-input');
+      if (!input.value.trim()) return;
+      push(ref(db, 'morningChecks'), {
+        text: input.value.trim(),
+        lot: lotInput.value.trim() || null,
+        done: false
+      });
+      input.value = '';
+      lotInput.value = '';
+    };
+
+    window.toggleMorningCheck = (key, state) => set(ref(db, `morningChecks/${key}/done`), state);
+    window.deleteMorningCheck = (key) => remove(ref(db, `morningChecks/${key}`));
+
+    // Live Sync: Materials & Lockable Places
+    onValue(ref(db, 'materials'), (snapshot) => {
+      allMaterialsData = snapshot.val() || {};
+      renderMaterials();
+    });
+
+    window.renderMaterials = function() {
+      const list = document.getElementById('materials-list');
+      const query = document.getElementById('material-search').value.toLowerCase().trim();
+      list.innerHTML = '';
+
+      const entries = Object.entries(allMaterialsData).filter(([_, item]) => {
+        return item.name.toLowerCase().includes(query) || item.place.toLowerCase().includes(query);
+      });
+
+      if (entries.length === 0) {
+        list.innerHTML = '<li class="empty-msg">Nothing on site matches that.</li>';
+        return;
+      }
+
+      entries.forEach(([key, item]) => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+          <div class="item-left">
+            <strong>${item.name}</strong>
+            <span class="badge">📍 ${item.place}</span>
+          </div>
+          <div>
+            <button class="icon-btn" title="${item.locked ? 'Unlock place' : 'Lock place'}" onclick="toggleLockMaterial('${key}', ${!item.locked})">
+              ${item.locked ? '🔒' : '🔓'}
+            </button>
+            ${!item.locked ? `<button class="icon-btn delete-btn" onclick="deleteMaterial('${key}')">×</button>` : ''}
+          </div>
+        `;
+        list.appendChild(li);
+      });
+    };
+
+    window.addMaterial = function() {
+      const name = document.getElementById('material-name').value.trim();
+      const place = document.getElementById('material-place').value.trim();
+      if (!name || !place) return;
+      push(ref(db, 'materials'), { name, place, locked: false });
+      document.getElementById('material-name').value = '';
+      document.getElementById('material-place').value = '';
+    };
+
+    window.toggleLockMaterial = (key, lockedState) => update(ref(db, `materials/${key}`), { locked: lockedState });
+    window.deleteMaterial = (key) => remove(ref(db, `materials/${key}`));
+
+    // Live Sync: Running Low
+    onValue(ref(db, 'runningLow'), (snapshot) => {
+      const list = document.getElementById('running-low-list');
+      list.innerHTML = '';
+      const data = snapshot.val() || {};
+      const entries = Object.entries(data);
+      if (entries.length === 0) {
+        list.innerHTML = '<li class="empty-msg">Nothing on this list yet.</li>';
+        return;
+      }
+      entries.forEach(([key, item]) => {
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = `
+          <div class="item-left">
+            <span>⚠️ ${item.item}</span>
+            ${item.lot ? `<span class="badge">Lot ${item.lot}</span>` : ''}
+          </div>
+          <button class="icon-btn delete-btn" onclick="deleteRunningLow('${key}')">×</button>
+        `;
+        list.appendChild(li);
+      });
+    });
+
+    window.addRunningLow = function() {
+      const item = document.getElementById('low-item-input').value.trim();
+      const lot = document.getElementById('low-item-lot').value.trim();
+      if (!item) return;
+      push(ref(db, 'runningLow'), { item, lot: lot || null });
+      document.getElementById('low-item-input').value = '';
+      document.getElementById('low-item-lot').value = '';
+    };
+
+    window.deleteRunningLow = (key) => remove(ref(db, `runningLow/${key}`));
+  </script>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>Peninsula View</h1>
+      <div class="subtitle">Stage 2 site notes • Drawing 150136/A1300 rev C2</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('units', this)">All Units (1–34)</button>
+    <button class="tab-btn" onclick="showTab('morning', this)">Morning Checks</button>
+    <button class="tab-btn" onclick="showTab('materials', this)">Materials & Places</button>
+    <button class="tab-btn" onclick="showTab('running-low', this)">Running Low</button>
+  </div>
+
+  <!-- Tab 1: Units 1–34 -->
+  <section id="units-section" class="tab-content">
+    <div class="lot-grid-container">
+      <div class="grid-header">
+        <span id="notes-status-badge" class="grid-info">Loading notes…</span>
+        <button class="secondary-btn" onclick="toggleAllNotesText()">All notes as text</button>
+      </div>
+      <div class="lot-grid" id="lot-grid"></div>
+      <div class="grid-info" style="margin-top: 10px;">
+        Tap a number to open that unit. Blue numbers have notes. Lots 29 and 33 placed by position.
+      </div>
+    </div>
+
+    <div id="all-notes-text-card" class="card" style="display: none;">
+      <h3>All Notes as Text</h3>
+      <div id="all-notes-text-body" style="font-size: 0.9rem; line-height: 1.45;"></div>
+    </div>
+
+    <div class="card">
+      <h3>
+        <span id="current-lot-title">Lot 1 Notes</span>
+        <span id="save-msg" class="save-indicator">✓ Saved live</span>
+      </h3>
+      <textarea id="lot-note-input" placeholder="Notes for this unit..."></textarea>
+      <button class="action-btn" onclick="saveLotNote()">Save Unit Notes</button>
+    </div>
+  </section>
+
+  <!-- Tab 2: Morning Checks -->
+  <section id="morning-section" class="tab-content" style="display: none;">
+    <div class="card">
+      <h3>Things to check first thing</h3>
+      <div class="grid-info" style="margin-bottom: 10px;">Tick each one once it is sorted.</div>
+      <input type="text" id="check-input" placeholder="Something to check...">
+      <input type="text" id="check-lot-input" placeholder="Unit it is about (optional)">
+      <button class="action-btn" onclick="addMorningCheck()">Add Check</button>
+    </div>
+    <div class="card">
+      <h3>Morning Checklist</h3>
+      <ul id="morning-checks-list"></ul>
+    </div>
+  </section>
+
+  <!-- Tab 3: Materials & Locations -->
+  <section id="materials-section" class="tab-content" style="display: none;">
+    <div class="card">
+      <h3>Find a Material</h3>
+      <input type="text" id="material-search" placeholder="Search what is on site or where it is kept..." oninput="renderMaterials()" style="margin-bottom: 4px;">
+    </div>
+
+    <div class="card">
+      <h3>On Site & Where It Is Kept</h3>
+      <div class="grid-info" style="margin-bottom: 8px;">A locked place (🔒) cannot be deleted until someone unlocks it.</div>
+      <ul id="materials-list"></ul>
+    </div>
+
+    <div class="card">
+      <h3>New Place / Material</h3>
+      <input type="text" id="material-name" placeholder="Material (e.g. Type 03A door frames)">
+      <input type="text" id="material-place" placeholder="Where it is kept (e.g. Container 2)">
+      <button class="action-btn" onclick="addMaterial()">Save to Site Map</button>
+    </div>
+  </section>
+
+  <!-- Tab 4: Running Low -->
+  <section id="running-low-section" class="tab-content" style="display: none;">
+    <div class="card">
+      <h3>Running Low</h3>
+      <input type="text" id="low-item-input" placeholder="New list item...">
+      <input type="text" id="low-item-lot" placeholder="Lot / Unit (optional)">
+      <button class="action-btn" onclick="addRunningLow()">Add List Item</button>
+    </div>
+    <div class="card">
+      <h3>Shortage List</h3>
+      <ul id="running-low-list"></ul>
+    </div>
+  </section>
+
+</body>
+</html>
