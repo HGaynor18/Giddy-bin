@@ -17,7 +17,9 @@
   firebase.initializeApp(CFG.firebase);
   var auth = firebase.auth(), fs = firebase.firestore();
   // Keep a copy on the phone so the page still opens with poor signal on site; changes sync when back online.
-  try { fs.enablePersistence({ synchronizeTabs: true }).catch(function () {}); } catch (e) {}
+  // Single-tab mode: the first tab keeps the offline copy, any other tab just works online. (Multi-tab mode
+  // routes every tab through one "primary" tab, which stalls when that tab is asleep in the background.)
+  try { fs.enablePersistence().catch(function () {}); } catch (e) {}
 
   // ---------- the gate shown until someone is signed in and approved ----------
   var css = document.createElement('link'); css.rel = 'stylesheet'; css.href = ROOT + 'shared/platform.css';
