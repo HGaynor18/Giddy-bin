@@ -1,0 +1,46 @@
+rules_version = '2';
+
+// Giddy-bin access rules. Paste into Firebase console > Firestore Database > Rules, then Publish.
+//
+//   users/{uid}             name and email, written by each person about themselves when they sign in
+//   access/{uid}            { role: 'viewer' | 'member' | 'admin', sites: ['peninsula-view', ...] or ['*'] }, admins only
+//   spaces/{site}/{coll}/…  the data for one work site or tool
+//
+// The owner email below is always an admin, so there is always someone who can approve people.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner() {
+      return signedIn() && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() == 'harrison26gaynor@gmail.com';
+    }
+    function accessPath() { return /databases/$(database)/documents/access/$(request.auth.uid); }
+    function hasAccess() { return signedIn() && exists(accessPath()); }
+    function acc() { return get(accessPath()).data; }
+    function isAdmin() { return isOwner() || (hasAccess() && acc().role == 'admin'); }
+    function canOpen(site) { return isAdmin() || (hasAccess() && ('*' in acc().sites || site in acc().sites)); }
+    function canEdit(site) { return isAdmin() || (canOpen(site) && acc().role == 'member'); }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin() || hasAccess());
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'email', 'photo', 'seen'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 200;
+      allow delete: if isAdmin();
+    }
+
+    match /access/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin()
+        && (request.resource == null || (request.resource.data.role in ['viewer', 'member', 'admin'] && request.resource.data.sites is list));
+    }
+
+    match /spaces/{site}/{coll}/{doc} {
+      allow read: if canOpen(site);
+      allow write: if canEdit(site);
+    }
+
+    // Anything else is closed.
+  }
+}
