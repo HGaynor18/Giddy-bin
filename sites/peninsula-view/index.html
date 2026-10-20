@@ -758,7 +758,9 @@
     $('sheetTitle').textContent = 'Lot ' + n;
     $('sheetSub').textContent = describe(l);
     $('levels').hidden = isSingle(l);
-    idleStatus(); showLevel('l');
+    idleStatus();
+    // Start on Lower, unless Lower is empty and Upper has notes or a list: then go straight to Upper.
+    showLevel(!isSingle(l) && !keyHas(keyOf(n, 'l')) && keyHas(keyOf(n, 'u')) ? 'u' : 'l');
     document.body.classList.add('sheet-open');
     if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', '');
     $('panelNotes').scrollTop = 0; $('panelList').scrollTop = 0;
