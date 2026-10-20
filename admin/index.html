@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Giddy-bin Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<style>
+  :root { --page:#e8ebe8; --panel:#fff; --ink:#1c2530; --muted:#586470; --line:#c4cac6; --accent:#1a56db; --soft:#e3ebfd; --warn:#fff4d6; --warnline:#d9a400; --ok:#1d7a3e; }
+  @media (prefers-color-scheme: dark) { :root { --page:#12171d; --panel:#1b222b; --ink:#e6eaee; --muted:#9aa5b0; --line:#34404c; --accent:#6d9bff; --soft:#1e2a40; --warn:#3a2f10; --warnline:#b88a00; --ok:#5fcf8a; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 400 1rem/1.45 "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { margin: 8px 0 2px; font: 700 2rem/1.1 "Barlow Semi Condensed", "Barlow", system-ui, sans-serif; }
+  .sub { margin: 0 0 20px; color: var(--muted); }
+  h2 { margin: 28px 0 10px; font: 700 1.05rem/1.2 "Barlow Semi Condensed", "Barlow", sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .people { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .person { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .person.waiting { border-color: var(--warnline); background: var(--warn); }
+  .who b { display: block; font-size: 1.1rem; }
+  .who span { color: var(--muted); word-break: break-all; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 12px; }
+  label { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; }
+  select { font: inherit; min-height: 44px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); }
+  .sites[aria-disabled=true] { opacity: .45; pointer-events: none; }
+  .state { font-size: .9rem; color: var(--muted); min-height: 1.2em; margin-top: 6px; }
+  .state.ok { color: var(--ok); }
+  .note { color: var(--muted); font-size: .95rem; }
+  a { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="../shared/config.js"></script>
+<script src="../shared/registry.js"></script>
+<script src="../shared/platform.js"></script>
+<main>
+  <h1>Admin</h1>
+  <p class="sub">Approve people and choose which sites they can open. Changes apply straight away.</p>
+  <p id="notAdmin" class="note" hidden>Only admins can use this page. <a href="../">Back to all sites</a></p>
+  <div id="panel" hidden>
+    <h2>Waiting for approval</h2>
+    <ul class="people" id="waiting"></ul>
+    <p class="note" id="noneWaiting">Nobody is waiting. New people appear here after they sign in once.</p>
+    <h2>Everyone else</h2>
+    <ul class="people" id="others"></ul>
+    <p class="note">Can view: read only. Can edit: add and change notes. Admin: can also use this page.</p>
+  </div>
+</main>
+<script>
+(function () {
+  var fs = GB.fs, users = {}, access = {}, rows = {}, me = null;
+  var ROLES = [['', 'No access'], ['viewer', 'Can view'], ['member', 'Can edit'], ['admin', 'Admin']];
+  var $ = function (id) { return document.getElementById(id); };
+
+  GB.ready.then(function (s) {
+    me = s;
+    if (!s.isAdmin) { $('notAdmin').hidden = false; return; }
+    $('panel').hidden = false;
+    fs.collection('users').onSnapshot(function (snap) { users = {}; snap.forEach(function (d) { users[d.id] = d.data(); }); render(); });
+    fs.collection('access').onSnapshot(function (snap) { access = {}; snap.forEach(function (d) { access[d.id] = d.data(); }); render(); });
+  });
+
+  function isOwner(u) { return u && u.email && u.email.toLowerCase() === GB.config.ownerEmail.toLowerCase(); }
+
+  function makeRow(uid) {
+    var li = document.createElement('li'); li.className = 'person';
+    var who = document.createElement('div'); who.className = 'who';
+    var name = document.createElement('b'), mail = document.createElement('span');
+    who.appendChild(name); who.appendChild(mail); li.appendChild(who);
+    var row = document.createElement('div'); row.className = 'row';
+    var roleLab = document.createElement('label'), role = document.createElement('select');
+    ROLES.forEach(function (r) { var o = document.createElement('option'); o.value = r[0]; o.textContent = r[1]; role.appendChild(o); });
+    roleLab.appendChild(role); row.appendChild(roleLab);
+    var sites = document.createElement('div'); sites.className = 'row sites'; sites.style.marginTop = '0';
+    var boxes = {};
+    [{ id: '*', name: 'All sites, including future ones' }].concat(GB.registry).forEach(function (r) {
+      var l = document.createElement('label'), cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = r.id;
+      l.appendChild(cb); l.appendChild(document.createTextNode(r.name)); sites.appendChild(l); boxes[r.id] = cb;
+      cb.addEventListener('change', save);
+    });
+    row.appendChild(sites); li.appendChild(row);
+    var state = document.createElement('p'); state.className = 'state'; state.setAttribute('aria-live', 'polite'); li.appendChild(state);
+    role.addEventListener('change', save);
+
+    function save() {
+      var r = role.value, picked = Object.keys(boxes).filter(function (k) { return boxes[k].checked; });
+      if (boxes['*'].checked) picked = ['*'];
+      // Approving someone with no site ticked would let them in to nothing, so tick the only site for them.
+      if (r && r !== 'admin' && !picked.length && GB.registry.length === 1) { picked = [GB.registry[0].id]; }
+      state.className = 'state'; state.textContent = 'Saving…';
+      var ref = fs.collection('access').doc(uid);
+      var p = r ? ref.set({ role: r, sites: picked, email: (users[uid] || {}).email || '', by: me.uid, at: Date.now() }) : ref.delete();
+      p.then(function () { state.className = 'state ok'; state.textContent = 'Saved'; },
+        function (e) { state.textContent = 'Not saved: ' + (e && e.code || 'error'); });
+    }
+    return { li: li, name: name, mail: mail, role: role, sites: sites, boxes: boxes };
+  }
+
+  function render() {
+    var ids = Object.keys(users).sort(function (a, b) { return (users[b].seen || 0) - (users[a].seen || 0); });
+    var waiting = $('waiting'), others = $('others'), nWait = 0;
+    ids.forEach(function (uid) {
+      var u = users[uid], a = access[uid], r = rows[uid] || (rows[uid] = makeRow(uid));
+      var owner = isOwner(u);
+      r.name.textContent = (u.name || u.email || 'Unknown') + (owner ? ' (owner)' : uid === me.uid ? ' (you)' : '');
+      r.mail.textContent = u.email || uid;
+      var role = owner ? 'admin' : (a && a.role) || '';
+      if (document.activeElement !== r.role) r.role.value = role;
+      r.role.disabled = owner;
+      var list = (a && a.sites) || [];
+      Object.keys(r.boxes).forEach(function (k) { r.boxes[k].checked = list.indexOf(k) !== -1 || (k !== '*' && list.indexOf('*') !== -1); r.boxes[k].disabled = k !== '*' && list.indexOf('*') !== -1; });
+      r.sites.setAttribute('aria-disabled', String(!role || role === 'admin'));
+      var isWaiting = !role;
+      r.li.classList.toggle('waiting', isWaiting);
+      (isWaiting ? waiting : others).appendChild(r.li);
+      if (isWaiting) nWait++;
+    });
+    $('noneWaiting').hidden = nWait > 0;
+  }
+})();
+</script>
+</body>
+</html>
