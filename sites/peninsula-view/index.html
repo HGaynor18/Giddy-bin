@@ -230,6 +230,12 @@
   .tabs { display: flex; padding: 0 16px; border-bottom: 1px solid var(--line); gap: 4px; }
   .tabs button { min-height: 44px; padding: 8px 16px; margin-bottom: -1px; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--muted); font-weight: 600; }
   .tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+  /* A tab with something in it gets a filled badge, so it is obvious at a glance which side holds the info. */
+  .tabs button { display: inline-flex; align-items: center; gap: 8px; }
+  .tabs .badge { display: none; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px; background: var(--accent); color: var(--on-accent);
+    font-size: 0.8rem; font-weight: 700; line-height: 22px; text-align: center; }
+  .tabs button.has .badge { display: inline-block; }
+  .tabs button.has { color: var(--ink); }
   .panel { flex: 1; min-height: 0; overflow: auto; padding: 14px 16px; }
   #panelNotes { display: flex; }
   textarea { flex: 1; width: 100%; min-height: 140px; resize: none; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); line-height: 1.5; }
@@ -381,8 +387,8 @@
       <button type="button" id="lvlUpper" aria-pressed="false">Upper</button>
     </div>
     <div class="tabs" role="tablist" aria-label="Unit details">
-      <button type="button" role="tab" id="tabNotes" aria-controls="panelNotes" aria-selected="true">Notes</button>
-      <button type="button" role="tab" id="tabList" aria-controls="panelList" aria-selected="false">List</button>
+      <button type="button" role="tab" id="tabNotes" aria-controls="panelNotes" aria-selected="true">Notes<span class="badge" id="notesBadge" aria-hidden="true">✓</span></button>
+      <button type="button" role="tab" id="tabList" aria-controls="panelList" aria-selected="false">List<span class="badge" id="listBadge" aria-hidden="true"></span></button>
     </div>
     <div class="panel" id="panelNotes" role="tabpanel" aria-labelledby="tabNotes">
       <label class="visually-hidden" for="notes">Notes for this unit</label>
@@ -690,7 +696,8 @@
     $('emptyList').hidden = items.length > 0;
     $('emptyList').textContent = readOnly ? 'Nothing on this list yet.' : 'Nothing on this list yet. Add the first item above.';
     $('clearDone').hidden = readOnly || !items.some(function (i) { return i.done; });
-    $('tabList').textContent = items.length ? 'List (' + items.length + ')' : 'List';
+    $('listBadge').textContent = items.length; $('tabList').classList.toggle('has', items.length > 0);
+    $('tabList').setAttribute('aria-label', items.length ? 'List, ' + items.length + (items.length === 1 ? ' item' : ' items') : 'List, empty');
     autosizeAll();
   }
   var lastChangeToken = 0;
@@ -717,6 +724,8 @@
     if (notesEl.placeholder !== ph) notesEl.placeholder = ph;
     $('addForm').hidden = !canType;
     $('clearUnit').hidden = !canType || !keyHas(k);
+    var hasNote = noteText(k).trim() !== '';
+    $('tabNotes').classList.toggle('has', hasNote); $('tabNotes').setAttribute('aria-label', hasNote ? 'Notes, has notes' : 'Notes, empty');
     $('lvlLower').classList.toggle('has', keyHas(keyOf(current, 'l')));
     $('lvlUpper').classList.toggle('has', keyHas(keyOf(current, 'u')));
     syncItems(); syncLastChange();
@@ -730,6 +739,8 @@
     var k = curKey();
     $('addInput').value = ''; notesEl.value = (k in noteDraft) ? noteDraft[k] : noteText(k);
     disarmClear(); syncSheet();
+    // Open on whichever side has something: notes first, else the list if it has items, else notes.
+    setTab(noteText(k).trim() === '' && lotItems(k).length ? 'list' : 'notes');
     $('panelNotes').scrollTop = 0; $('panelList').scrollTop = 0;
   }
   function switchLevel(lv) {
@@ -747,7 +758,7 @@
     $('sheetTitle').textContent = 'Lot ' + n;
     $('sheetSub').textContent = describe(l);
     $('levels').hidden = isSingle(l);
-    idleStatus(); setTab('notes'); showLevel('l');
+    idleStatus(); showLevel('l');
     document.body.classList.add('sheet-open');
     if (typeof sheet.showModal === 'function') sheet.showModal(); else sheet.setAttribute('open', '');
     $('panelNotes').scrollTop = 0; $('panelList').scrollTop = 0;
