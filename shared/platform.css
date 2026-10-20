@@ -1,0 +1,39 @@
+/* Sign-in gate and the slim account bar. Uses its own tokens so it looks the same on every page. */
+:root {
+  --gb-page: #e8ebe8; --gb-panel: #ffffff; --gb-ink: #1c2530; --gb-muted: #586470; --gb-line: #c4cac6;
+  --gb-accent: #1a56db; --gb-on-accent: #ffffff; --gb-backdrop: rgba(232, 235, 232, 0.97);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gb-page: #12171d; --gb-panel: #1b222b; --gb-ink: #e6eaee; --gb-muted: #9aa5b0; --gb-line: #34404c;
+    --gb-accent: #6d9bff; --gb-on-accent: #0b1220; --gb-backdrop: rgba(18, 23, 29, 0.97);
+  }
+}
+html.gb-locked, html.gb-locked body { overflow: hidden; }
+.gb-gate[hidden], .gb-bar[hidden] { display: none !important; }
+.gb-gate {
+  position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: 16px;
+  background: var(--gb-backdrop); font-family: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--gb-ink);
+}
+.gb-card {
+  width: 100%; max-width: 400px; background: var(--gb-panel); border: 1px solid var(--gb-line); border-radius: 12px;
+  padding: 24px 20px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+}
+.gb-org { margin: 0; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gb-muted); }
+.gb-title { margin: 4px 0 12px; font: 700 1.7rem/1.1 "Barlow Semi Condensed", "Barlow", system-ui, sans-serif; }
+.gb-msg { margin: 0 0 16px; font-size: 1.05rem; line-height: 1.4; }
+.gb-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.gb-actions button, .gb-bar button {
+  font: inherit; font-weight: 600; min-height: 48px; padding: 0 18px; border-radius: 8px; cursor: pointer;
+}
+.gb-primary { background: var(--gb-accent); color: var(--gb-on-accent); border: 1px solid var(--gb-accent); flex: 1 1 auto; }
+.gb-secondary { background: transparent; color: var(--gb-ink); border: 1px solid var(--gb-line); }
+.gb-fine { margin: 14px 0 0; font-size: 0.9rem; color: var(--gb-muted); }
+.gb-fine:empty { display: none; }
+.gb-bar {
+  display: flex; align-items: center; gap: 12px; padding: 6px 16px; padding-top: max(6px, env(safe-area-inset-top));
+  font: 500 0.9rem/1.2 "Barlow", system-ui, sans-serif; color: var(--gb-muted); background: var(--gb-panel); border-bottom: 1px solid var(--gb-line);
+}
+.gb-bar a { color: var(--gb-accent); font-weight: 600; text-decoration: none; padding: 8px 0; }
+.gb-who { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.gb-bar button { min-height: 36px; padding: 0 12px; background: transparent; color: var(--gb-ink); border: 1px solid var(--gb-line); }
