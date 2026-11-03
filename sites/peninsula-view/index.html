@@ -33,6 +33,9 @@
     --plan-ink: #1c2530;
     --plan-blue: #1a56db;
     --plan-on-blue: #ffffff;
+    /* Unit status: blue = has notes, red = list not finished, green = list all ticked. */
+    --plan-red: #c62828;
+    --plan-green: #1e8e3e;
     --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
     --font-display: "Barlow Semi Condensed", "Barlow", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
     --vvh: 100vh;
@@ -100,14 +103,26 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     font: 700 15px/1 var(--font-display); font-variant-numeric: tabular-nums; pointer-events: none;
   }
-  .lot.has .pin { background: var(--plan-blue); color: var(--plan-on-blue); border-color: var(--plan-paper); box-shadow: 0 0 0 1.5px var(--plan-blue), 0 1px 4px rgba(0, 0, 0, 0.45); }
+  /* --c1 / --c2 are the two halves of a pin: left is notes (blue) when there are notes, right is the list state.
+     With only one of the two, both halves take the same colour. */
+  .lot.has .pin {
+    background: linear-gradient(90deg, var(--c1) 50%, var(--c2) 50%); color: var(--plan-on-blue); border-color: var(--plan-paper);
+    box-shadow: 0 0 0 1.5px var(--plan-ink), 0 1px 4px rgba(0, 0, 0, 0.45); text-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+  }
+  .has.s-note { --c1: var(--plan-blue); --c2: var(--plan-blue); }
+  .has.s-open { --c1: var(--plan-red); --c2: var(--plan-red); }
+  .has.s-done { --c1: var(--plan-green); --c2: var(--plan-green); }
+  .has.s-note.s-open { --c1: var(--plan-blue); --c2: var(--plan-red); }
+  .has.s-note.s-done { --c1: var(--plan-blue); --c2: var(--plan-green); }
 
   .under { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 8px; }
   .zoom { display: flex; gap: 6px; flex: none; }
   .zoom button { min-width: 44px; height: 44px; padding: 0 12px; background: var(--panel); border: 1px solid var(--ink); border-radius: 6px; font-weight: 700; }
   .zoom button:active, .btn:active, .chip:active { background: var(--accent-soft); }
   .hint { margin: 0; color: var(--muted); font-size: 0.9rem; max-width: 60ch; min-width: 0; }
-  .key { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 50%; background: var(--plan-blue); vertical-align: -0.05em; }
+  .key { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 50%; background: var(--plan-blue); vertical-align: -0.05em; margin-left: 0.4em; }
+  .key.k-open { background: var(--plan-red); }
+  .key.k-done { background: var(--plan-green); }
 
   h2 { font: 700 1.2rem/1.2 var(--font-display); margin: 28px 0 10px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
@@ -119,7 +134,8 @@
   .chip .n { font: 700 1.45rem/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
   .chip .t { font-size: 0.8rem; color: var(--muted); text-align: right; }
   .chip .m { grid-column: 1 / -1; font-size: 0.8rem; min-height: 1.2em; color: var(--accent); font-weight: 600; white-space: pre-line; }
-  .chip.has { background: var(--accent-soft); border-color: var(--accent); }
+  .chip.has { background: linear-gradient(90deg, var(--c1) 50%, var(--c2) 50%) top / 100% 6px no-repeat, var(--panel); border-color: var(--c2); padding-top: 12px; }
+  .chip.has .m { color: var(--ink); }
 
   .share p { margin: 0 0 10px; color: var(--muted); max-width: 62ch; }
   .btn { min-height: 44px; padding: 8px 14px; background: var(--panel); border: 1px solid var(--ink); border-radius: 6px; font-weight: 600; }
@@ -235,6 +251,8 @@
   .tabs .badge { display: none; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px; background: var(--accent); color: var(--on-accent);
     font-size: 0.8rem; font-weight: 700; line-height: 22px; text-align: center; }
   .tabs button.has .badge { display: inline-block; }
+  #listBadge.open { background: var(--plan-red); color: #ffffff; }
+  #listBadge.done { background: var(--plan-green); color: #ffffff; }
   .tabs button.has { color: var(--ink); }
   .panel { flex: 1; min-height: 0; overflow: auto; padding: 14px 16px; }
   #panelNotes { display: flex; }
@@ -318,7 +336,7 @@
     </div>
   </section>
   <div class="under">
-    <p class="hint">Tap a number to open that unit. Drag to move the plan, pinch to zoom. <span class="key" aria-hidden="true"></span> Blue numbers have notes.</p>
+    <p class="hint">Tap a number to open that unit. Drag to move the plan, pinch to zoom. <span class="key" aria-hidden="true"></span> notes <span class="key k-open" aria-hidden="true"></span> list not finished <span class="key k-done" aria-hidden="true"></span> list finished. Half and half: notes plus a list.</p>
     <div class="zoom">
       <button type="button" id="zoomOut" aria-label="Zoom out">−</button>
       <button type="button" id="zoomIn" aria-label="Zoom in">+</button>
@@ -445,6 +463,22 @@
   function noteText(k) { var e = notesByLot[k]; return e ? e.text : ''; }
   function lotItems(k) { return itemsByLot[k] || []; }
   function keyHas(k) { return noteText(k).trim() !== '' || lotItems(k).length > 0; }
+  // Status for colouring a unit: any notes on any level, and whether its lists (all levels) are finished.
+  function unitState(n) {
+    var lv = levelsOf(LOT_BY_N[n]), note = false, total = 0, open = 0;
+    lv.forEach(function (x) {
+      var k = keyOf(n, x), items = lotItems(k);
+      if (noteText(k).trim()) note = true;
+      total += items.length; open += items.filter(function (i) { return !i.done; }).length;
+    });
+    return { note: note, list: total === 0 ? '' : (open > 0 ? 'open' : 'done') };
+  }
+  function stateWords(st) {
+    var w = [];
+    if (st.note) w.push('has notes');
+    if (st.list) w.push(st.list === 'open' ? 'list not finished' : 'list finished');
+    return w.join(', ');
+  }
   function hasContent(n) { return levelsOf(LOT_BY_N[n]).some(function (lv) { return keyHas(keyOf(n, lv)); }); }
   function describe(l) { return l.type ? ('Type ' + l.type + ', ' + l.storey + (l.mirrored ? ', mirrored' : '') + (l.stage ? ', stage ' + l.stage : '')) : l.note; }
   function doneCount(k) { var items = lotItems(k); return items.filter(function (i) { return i.done; }).length + '/' + items.length; }
@@ -493,11 +527,17 @@
   function refreshMarks() {
     var count = 0;
     LOTS.forEach(function (l) {
-      var has = hasContent(l.n), text = mark(l.n);
+      var has = hasContent(l.n), text = mark(l.n), st = unitState(l.n);
       if (has) count++;
-      var label = 'Lot ' + l.n + ', ' + describe(l) + (has ? '. ' + text.replace('\n', ', ') : '. No notes yet');
-      lotButtons[l.n].classList.toggle('has', has); lotButtons[l.n].setAttribute('aria-label', label);
-      chips[l.n].classList.toggle('has', has); chips[l.n].lastChild.textContent = text; chips[l.n].setAttribute('aria-label', label);
+      var label = 'Lot ' + l.n + ', ' + describe(l) + (has ? '. ' + stateWords(st) + '. ' + text.replace('\n', ', ') : '. No notes yet');
+      [lotButtons[l.n], chips[l.n]].forEach(function (el) {
+        el.classList.toggle('has', has);
+        el.classList.toggle('s-note', st.note);
+        el.classList.toggle('s-open', st.list === 'open');
+        el.classList.toggle('s-done', st.list === 'done');
+        el.setAttribute('aria-label', label);
+      });
+      chips[l.n].lastChild.textContent = text;
     });
     $('tallyNum').textContent = count + ' of ' + LOTS.length;
     $('tallyLabel').textContent = (gotNotes && gotItems) ? 'units with notes' : 'loading notes';
@@ -696,7 +736,9 @@
     $('emptyList').hidden = items.length > 0;
     $('emptyList').textContent = readOnly ? 'Nothing on this list yet.' : 'Nothing on this list yet. Add the first item above.';
     $('clearDone').hidden = readOnly || !items.some(function (i) { return i.done; });
+    var openItems = items.filter(function (i) { return !i.done; }).length;
     $('listBadge').textContent = items.length; $('tabList').classList.toggle('has', items.length > 0);
+    $('listBadge').classList.toggle('open', openItems > 0); $('listBadge').classList.toggle('done', items.length > 0 && openItems === 0);
     $('tabList').setAttribute('aria-label', items.length ? 'List, ' + items.length + (items.length === 1 ? ' item' : ' items') : 'List, empty');
     autosizeAll();
   }
