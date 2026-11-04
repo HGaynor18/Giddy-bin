@@ -409,7 +409,7 @@
     tx = w <= r.width ? (r.width - w) / 2 : Math.min(40, Math.max(r.width - w - 40, tx));
     ty = h <= r.height ? (r.height - h) / 2 : Math.min(40, Math.max(r.height - h - 40, ty));
     layer.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + s + ')';
-    var screenPx = Math.min(30, Math.max(16, 70 * s));
+    var screenPx = Math.min(30, Math.max(20, 70 * s));
     layer.style.setProperty('--pin', (screenPx / (30 * s)).toFixed(4));
   }
   function fit() {
