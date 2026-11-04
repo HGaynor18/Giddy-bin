@@ -3,8 +3,11 @@ rules_version = '2';
 // Giddy-bin access rules. Paste into Firebase console > Firestore Database > Rules, then Publish.
 //
 //   users/{uid}             name and email, written by each person about themselves when they sign in
-//   access/{uid}            { role: 'viewer' | 'member' | 'admin', sites: ['peninsula-view', ...] or ['*'] }, admins only
-//   spaces/{site}/{coll}/…  the data for one work site or tool
+//   access/{uid}            { role: 'viewer' | 'member' | 'admin', sites: ['peninsula-view', ...] or ['*'],
+//                             type: 'staff' | 'supervisor' | 'builder' }, admins only
+//   sites/{site}            a work site's name, units and plan settings, made in the Site editor (admins only)
+//   sitePlans/{site}        that site's plan image, kept apart so the site list stays small
+//   spaces/{site}/{coll}/…  the data people add on one work site or tool
 //
 // The owner email below is always an admin, so there is always someone who can approve people.
 service cloud.firestore {
@@ -33,7 +36,18 @@ service cloud.firestore {
     match /access/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow write: if isAdmin()
-        && (request.resource == null || (request.resource.data.role in ['viewer', 'member', 'admin'] && request.resource.data.sites is list));
+        && (request.resource == null || (request.resource.data.role in ['viewer', 'member', 'admin'] && request.resource.data.sites is list
+          && (!('type' in request.resource.data) || request.resource.data.type in ['staff', 'supervisor', 'builder'])));
+    }
+
+    match /sites/{site} {
+      allow read: if canOpen(site);
+      allow write: if isAdmin();
+    }
+
+    match /sitePlans/{site} {
+      allow read: if canOpen(site);
+      allow write: if isAdmin();
     }
 
     match /spaces/{site}/{coll}/{doc} {

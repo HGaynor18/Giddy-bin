@@ -1,0 +1,121 @@
+/* Giddy-bin theme: plain blacks, greys and off-whites, one font, generous spacing.
+   Every page loads this first. Colour is kept for meaning only (unit status, warnings).
+
+   Rules this file keeps:
+   - No pure white surfaces: the page is a soft grey and panels an off-white, so white drawings still show their edges.
+   - Text always sits on a token that was chosen to contrast with it (ink on page/panel/field, on-ink on ink).
+   - Status colours are the same in light and dark, and always carry dark or white text chosen to read on them. */
+
+:root {
+  --page: #efefed;
+  --panel: #f9f9f8;
+  --field: #fdfdfc;
+  --raised: #e6e6e3;       /* hover, pressed, quiet fills */
+  --ink: #18181a;
+  --on-ink: #f6f6f4;       /* text on an ink-filled button */
+  --muted: #595959;        /* secondary text, 6.5:1 on page */
+  --line: #d3d3cf;
+  --line-strong: #a3a39e;
+  --mat: #dcdcd8;          /* the frame around a plan drawing */
+  --danger: #b42318;
+  --warn-bg: #fdf3d7;
+  --warn-line: #c58a00;
+  --ok: #157a3b;
+  --backdrop: rgba(24, 24, 26, 0.5);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.06);
+
+  /* Status colours. Fixed in both themes because they also sit on the plan drawing. */
+  --st-note: #2357d6;      /* blue: has notes */
+  --st-open: #c62828;      /* red: list or task not finished */
+  --st-done: #15803d;      /* green: finished */
+  --st-flag: #f2a900;      /* amber: important note (takes dark text) */
+  --st-on: #ffffff;        /* text on blue, red, green */
+  --st-on-flag: #18181a;   /* text on amber */
+
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --radius: 10px;
+  --radius-sm: 7px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #111113; --panel: #19191c; --field: #1f1f23; --raised: #26262b;
+    --ink: #ececea; --on-ink: #141416; --muted: #a6a6a2; --line: #2f2f34; --line-strong: #4a4a50; --mat: #2a2a2f;
+    --danger: #ff8a7a; --warn-bg: #362a08; --warn-line: #a87800; --ok: #5ccf86;
+    --backdrop: rgba(0, 0, 0, 0.6); --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #111113; --panel: #19191c; --field: #1f1f23; --raised: #26262b;
+  --ink: #ececea; --on-ink: #141416; --muted: #a6a6a2; --line: #2f2f34; --line-strong: #4a4a50; --mat: #2a2a2f;
+  --danger: #ff8a7a; --warn-bg: #362a08; --warn-line: #a87800; --ok: #5ccf86;
+  --backdrop: rgba(0, 0, 0, 0.6); --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--page); color: var(--ink);
+  font: 400 1rem/1.5 var(--font); -webkit-font-smoothing: antialiased;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+a { color: var(--ink); font-weight: 600; text-underline-offset: 3px; }
+[hidden] { display: none !important; }
+
+/* Page frame */
+.page { max-width: 1180px; margin: 0 auto; padding: 0 16px 56px; }
+.page.narrow { max-width: 760px; }
+.pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 24px 0 16px; border-bottom: 1px solid var(--line); }
+.pagehead h1 { margin: 0; font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.015em; text-wrap: balance; }
+.pagehead p { margin: 4px 0 0; color: var(--muted); }
+.eyebrow { margin: 0 0 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+h2.section { margin: 32px 0 12px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.lede { margin: 6px 0 14px; color: var(--muted); max-width: 64ch; }
+
+/* Surfaces */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 16px; border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line-strong);
+  font-weight: 600; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { background: var(--raised); }
+.btn.primary { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.btn.primary:hover { opacity: 0.88; background: var(--ink); }
+.btn.quiet { border-color: var(--line); color: var(--muted); font-weight: 500; }
+.btn.danger { color: var(--danger); border-color: var(--line); font-weight: 500; }
+.btn.danger.armed { background: var(--danger); color: #ffffff; border-color: var(--danger); font-weight: 600; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn.small { min-height: 36px; padding: 4px 12px; font-size: 0.875rem; }
+
+/* Fields */
+.field, .page input[type="text"], .page input[type="search"], .page select, .page textarea {
+  min-height: 44px; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  background: var(--field); color: var(--ink);
+}
+.page input:focus, .page select:focus, .page textarea:focus { outline: 2px solid var(--ink); outline-offset: 0; border-color: var(--ink); }
+input[type="checkbox"] { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); }
+label.check { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; }
+
+/* Segmented switch: one choice out of a few */
+.seg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); overflow: hidden; background: var(--panel); }
+.seg button { min-height: 40px; padding: 4px 14px; border: 0; background: none; color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--ink); color: var(--on-ink); }
+.seg button:focus-visible { outline-offset: -3px; }
+
+.empty { color: var(--muted); margin: 14px 0 0; }
+.note { color: var(--muted); font-size: 0.925rem; }
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--on-ink); padding: 10px 16px; border-radius: var(--radius-sm); max-width: calc(100vw - 32px); z-index: 10; box-shadow: var(--shadow); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Inside another app (?embed=1): no account bar, tighter top. */
+html.gb-embed .gb-bar { display: none !important; }
+html.gb-embed .pagehead { padding-top: 12px; }

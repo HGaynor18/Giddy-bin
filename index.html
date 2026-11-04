@@ -4,58 +4,70 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Giddy-bin</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="shared/theme.css">
 <style>
-  :root { --page:#e8ebe8; --panel:#fff; --ink:#1c2530; --muted:#586470; --line:#c4cac6; --accent:#1a56db; --soft:#e3ebfd; }
-  @media (prefers-color-scheme: dark) { :root { --page:#12171d; --panel:#1b222b; --ink:#e6eaee; --muted:#9aa5b0; --line:#34404c; --accent:#6d9bff; --soft:#1e2a40; } }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--page); color: var(--ink); font: 400 1rem/1.45 "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
-  main { max-width: 720px; margin: 0 auto; padding: 20px 16px 48px; }
-  h1 { margin: 8px 0 2px; font: 700 2rem/1.1 "Barlow Semi Condensed", "Barlow", system-ui, sans-serif; }
-  .sub { margin: 0 0 24px; color: var(--muted); }
-  h2 { margin: 28px 0 10px; font: 700 1.05rem/1.2 "Barlow Semi Condensed", "Barlow", sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-  .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-  .cards a { display: block; padding: 16px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: inherit; text-decoration: none; }
-  .cards a:hover, .cards a:focus-visible { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--soft); }
-  .cards b { display: block; font: 700 1.3rem/1.2 "Barlow Semi Condensed", "Barlow", sans-serif; }
-  .cards span { color: var(--muted); }
-  .empty { padding: 16px 18px; border: 1px dashed var(--line); border-radius: 10px; color: var(--muted); }
-  .admin { display: inline-block; margin-top: 28px; color: var(--accent); font-weight: 600; }
+  .cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+  .cards a { display: block; height: 100%; padding: 18px 20px; color: inherit; text-decoration: none; font-weight: 400; transition: border-color 0.15s, transform 0.15s; }
+  .cards a:hover, .cards a:focus-visible { border-color: var(--ink); transform: translateY(-1px); outline: none; }
+  .cards b { display: block; font-size: 1.2rem; font-weight: 700; letter-spacing: -0.01em; }
+  .cards span { display: block; margin-top: 4px; color: var(--muted); font-size: 0.925rem; }
+  .cards .tag { display: inline-block; margin-top: 10px; padding: 2px 10px; border-radius: 999px; background: var(--raised); color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+  .emptybox { padding: 18px 20px; border: 1px dashed var(--line-strong); border-radius: var(--radius); color: var(--muted); }
+  .adminrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; }
 </style>
-</head>
-<body>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="shared/config.js"></script>
 <script src="shared/registry.js"></script>
+<script src="shared/seeds.js"></script>
 <script src="shared/platform.js"></script>
-<main>
-  <h1>Giddy-bin</h1>
-  <p class="sub">Plumbing site notes and logistics.</p>
-  <div id="groups"></div>
-  <a class="admin" id="adminLink" href="admin/" hidden>Admin: approve people and set access</a>
+</head>
+<body>
+<main class="page narrow">
+  <header class="pagehead">
+    <div>
+      <p class="eyebrow">Giddy-bin</p>
+      <h1>Your sites</h1>
+      <p>Plumbing site notes and logistics.</p>
+    </div>
+  </header>
+  <div id="groups"><p class="empty">Loading…</p></div>
+  <div class="adminrow" id="adminRow" hidden>
+    <a class="btn" href="admin/">People and access</a>
+    <a class="btn" href="admin/sites/">Site editor</a>
+  </div>
 </main>
 <script>
-  var KIND = { site: 'Work sites', tool: 'Tools' };
+(function () {
+  var groups = document.getElementById('groups');
+  function card(href, name, detail, tag) {
+    var li = document.createElement('li'), a = document.createElement('a'), b = document.createElement('b'), sp = document.createElement('span');
+    a.className = 'card'; a.href = href; b.textContent = name; sp.textContent = detail || '';
+    a.appendChild(b); a.appendChild(sp);
+    if (tag) { var t = document.createElement('span'); t.className = 'tag'; t.textContent = tag; a.appendChild(t); }
+    li.appendChild(a); return li;
+  }
+  function section(title, items, emptyText) {
+    var h = document.createElement('h2'); h.className = 'section'; h.textContent = title; groups.appendChild(h);
+    if (!items.length) { var e = document.createElement('p'); e.className = 'emptybox'; e.textContent = emptyText; groups.appendChild(e); return; }
+    var ul = document.createElement('ul'); ul.className = 'cards'; items.forEach(function (x) { ul.appendChild(x); }); groups.appendChild(ul);
+  }
   GB.ready.then(function (s) {
-    var groups = document.getElementById('groups');
-    var mine = GB.registry.filter(function (r) { return GB.canOpen(s, r.id); });
-    Object.keys(KIND).forEach(function (k) {
-      var list = mine.filter(function (r) { return (r.kind || 'site') === k; });
-      if (!list.length && k !== 'site') return;
-      var h = document.createElement('h2'); h.textContent = KIND[k]; groups.appendChild(h);
-      if (!list.length) { var e = document.createElement('p'); e.className = 'empty'; e.textContent = 'No sites have been opened up for you yet. Ask Harrison.'; groups.appendChild(e); return; }
-      var ul = document.createElement('ul'); ul.className = 'cards';
-      list.forEach(function (r) {
-        var li = document.createElement('li'), a = document.createElement('a'), b = document.createElement('b'), sp = document.createElement('span');
-        a.href = r.path; b.textContent = r.name; sp.textContent = r.detail || '';
-        a.appendChild(b); a.appendChild(sp); li.appendChild(a); ul.appendChild(li);
-      });
-      groups.appendChild(ul);
+    document.getElementById('adminRow').hidden = !s.isAdmin;
+    return GB.listSites(s).then(function (list) {
+      groups.textContent = '';
+      var live = list.filter(function (x) { return x.status !== 'archived'; }), old = list.filter(function (x) { return x.status === 'archived'; });
+      var unitsText = function (x) { return x.units.length ? x.units.length + ' ' + x.unitWord.toLowerCase() + (x.units.length === 1 ? '' : 's') : ''; };
+      section('Work sites', live.map(function (x) { return card('site/?id=' + encodeURIComponent(x.id), x.name, x.detail, unitsText(x)); }),
+        s.isAdmin ? 'No sites yet. Make one in the Site editor.' : 'No sites have been opened up for you yet. Ask ' + (GB.config.ownerName || 'Harrison') + '.');
+      var tools = GB.registry.filter(function (r) { return (r.kind || 'tool') === 'tool' && GB.canOpen(s, r.id); });
+      if (tools.length) section('Tools', tools.map(function (r) { return card(r.path, r.name, r.detail); }), '');
+      if (s.isAdmin && old.length) section('Archived (admins only)', old.map(function (x) { return card('site/?id=' + encodeURIComponent(x.id), x.name, x.detail, 'Archived'); }), '');
     });
-    document.getElementById('adminLink').hidden = !s.isAdmin;
-  });
+  }).catch(function () { groups.innerHTML = '<p class="emptybox">Could not load your sites. Check your connection and reload.</p>'; });
+})();
 </script>
 </body>
 </html>
