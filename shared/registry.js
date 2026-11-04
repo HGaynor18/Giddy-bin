@@ -1,18 +1,9 @@
-// Every work site or tool the hub knows about.
+// Tools the hub shows under "Tools", such as a quoting app or a drain-measuring tool.
 //
-// To add a new one:
-//   1. Copy a folder under sites/ (or make one under tools/) and give it a new id.
-//   2. In that page, set window.GB_SPACE to the same id.
-//   3. Add an entry below. Its data lives in Firestore under spaces/<id>/...
-//   4. Tick it for people in the Admin page.
+// Work sites are no longer listed here: they live in Firestore and are made in Admin > Site editor.
+// Each entry: { id, kind: "tool", name, detail, path }. Its id is also what gets ticked on the Admin page,
+// and any data it keeps belongs under spaces/<id>/... in Firestore.
 window.GB_REGISTRY = [
-  {
-    id: "peninsula-view",
-    kind: "site",
-    name: "Peninsula View",
-    detail: "Stage 2, 34 units. Unit notes, materials on site, morning checks.",
-    path: "sites/peninsula-view/"
-  }
-  // { id: "next-job", kind: "site", name: "Next Job", detail: "...", path: "sites/next-job/" },
-  // { id: "van-stock", kind: "tool", name: "Van stock", detail: "What is in each van", path: "tools/van-stock/" },
+  // { id: "quoting", kind: "tool", name: "Quoting", detail: "Price a job and send the PDF", path: "tools/quoting/" },
+  // { id: "drains", kind: "tool", name: "Drain measuring", detail: "Measure runs off a scaled plan", path: "tools/drains/" },
 ];
