@@ -82,22 +82,23 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     font: 700 15px/1 var(--font-display); font-variant-numeric: tabular-nums; pointer-events: none;
   }
-  /* --c1 / --c2 are the two halves of a pin: left is notes (blue) when there are notes, right is the list state.
-     With only one of the two, both halves take the same colour. */
+  /* A pin's colours: top half = Upper level, bottom half = Lower level (a single-storey unit uses its one level for both).
+     Within each half, left = notes (blue) and right = the list (red not finished, green finished); with only one of the two,
+     the whole half takes that colour. A level with nothing on it stays paper white. Set per unit as --u1 --u2 --l1 --l2. */
+  .lot { --empty: var(--plan-paper); }
   .lot.has .pin {
-    background: linear-gradient(90deg, var(--c1) 50%, var(--c2) 50%); color: var(--plan-on-blue); border-color: var(--plan-paper);
-    box-shadow: 0 0 0 1.5px var(--plan-ink), 0 1px 4px rgba(0, 0, 0, 0.45); text-shadow: 0 0 2px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(90deg, var(--u1) 50%, var(--u2) 50%) top / 100% 50% no-repeat,
+      linear-gradient(90deg, var(--l1) 50%, var(--l2) 50%) bottom / 100% 50% no-repeat, var(--l1);
+    color: #ffffff; border-color: var(--plan-paper);
+    box-shadow: 0 0 0 1.5px var(--plan-ink), 0 1px 4px rgba(0, 0, 0, 0.45);
+    /* A dark halo keeps white numbers readable on colour and on a paper-white half alike. */
+    text-shadow: 0 0 2px #000, 0 0 2px #000, 0 0 1px #000;
   }
   /* Important markers: red ! for an open task, amber ! for an important note. They ride on the pin's corners. */
   .bang { position: absolute; top: -9px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center;
     font: 800 12px/1 var(--font); border: 1.5px solid var(--plan-paper); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); text-shadow: none; }
   .bang.task { right: -10px; background: var(--st-open); color: var(--st-on); }
   .bang.flag { left: -10px; background: var(--st-flag); color: var(--st-on-flag); }
-  .has.s-note { --c1: var(--plan-blue); --c2: var(--plan-blue); }
-  .has.s-open { --c1: var(--plan-red); --c2: var(--plan-red); }
-  .has.s-done { --c1: var(--plan-green); --c2: var(--plan-green); }
-  .has.s-note.s-open { --c1: var(--plan-blue); --c2: var(--plan-red); }
-  .has.s-note.s-done { --c1: var(--plan-blue); --c2: var(--plan-green); }
 
   .under { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-top: 8px; }
   .zoom { display: flex; gap: 6px; flex: none; }
@@ -110,6 +111,8 @@
   .legend li { display: inline-flex; align-items: center; gap: 6px; }
   .legend .key { margin: 0; }
   .legend .half { background: linear-gradient(90deg, var(--plan-blue) 50%, var(--plan-red) 50%); }
+  .legend .quad { background: linear-gradient(90deg, var(--plan-blue) 50%, var(--plan-green) 50%) top / 100% 50% no-repeat,
+    linear-gradient(90deg, var(--plan-paper) 50%, var(--plan-red) 50%) bottom / 100% 50% no-repeat; box-shadow: 0 0 0 1px var(--line-strong); }
   .key.k-open { background: var(--plan-red); }
   .key.k-done { background: var(--plan-green); }
 
@@ -127,7 +130,10 @@
   .chip .n { font: 700 1.45rem/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
   .chip .t { font-size: 0.8rem; color: var(--muted); text-align: right; }
   .chip .m { grid-column: 1 / -1; font-size: 0.8rem; min-height: 1.2em; color: var(--accent); font-weight: 600; white-space: pre-line; }
-  .chip.has { background: linear-gradient(90deg, var(--c1) 50%, var(--c2) 50%) top / 100% 6px no-repeat, var(--panel); border-color: var(--c2); padding-top: 12px; }
+  /* Unit cards: a two-row stripe on top, Upper over Lower, split the same way as the pins. */
+  .chip { --empty: var(--line); }
+  .chip.has { background: linear-gradient(90deg, var(--u1) 50%, var(--u2) 50%) 0 0 / 100% 5px no-repeat,
+    linear-gradient(90deg, var(--l1) 50%, var(--l2) 50%) 0 5px / 100% 5px no-repeat, var(--panel); border-color: var(--line-strong); padding-top: 14px; }
   .chip.has .m { color: var(--ink); }
 
   .share p { margin: 0 0 10px; color: var(--muted); max-width: 62ch; }
@@ -373,6 +379,7 @@
         <li><span class="key k-open" aria-hidden="true"></span>List not finished</li>
         <li><span class="key k-done" aria-hidden="true"></span>List finished</li>
         <li><span class="key half" aria-hidden="true"></span>Notes and a list</li>
+        <li><span class="key quad" aria-hidden="true"></span>Double storey: top half Upper, bottom half Lower</li>
         <li><span class="key bang task" aria-hidden="true">!</span>Important task</li>
         <li><span class="key bang flag" aria-hidden="true">!</span>Important note</li>
       </ul>
@@ -528,6 +535,21 @@
     });
     return { note: note, list: total === 0 ? '' : (open > 0 ? 'open' : 'done') };
   }
+  // The two colours for one level: [left, right]. Left is notes when there are any, right is the list.
+  function levelColours(n, lv) {
+    var k = keyOf(n, lv), items = lotItems(k), note = noteText(k).trim() !== '';
+    var list = !items.length ? null : items.some(function (i) { return !i.done; }) ? 'var(--plan-red)' : 'var(--plan-green)';
+    if (note && list) return ['var(--plan-blue)', list];
+    if (note) return ['var(--plan-blue)', 'var(--plan-blue)'];
+    if (list) return [list, list];
+    return ['var(--empty)', 'var(--empty)'];
+  }
+  function levelWords(n, lv) {
+    var k = keyOf(n, lv), items = lotItems(k), w = [];
+    if (noteText(k).trim()) w.push('notes');
+    if (items.length) w.push(items.some(function (i) { return !i.done; }) ? 'list not finished' : 'list finished');
+    return w.length ? w.join(' and ') : 'nothing';
+  }
   function stateWords(st) {
     var w = [];
     if (st.note) w.push('has notes');
@@ -612,7 +634,9 @@
       var has = hasContent(l.id), text = mark(l.id), st = unitState(l.id), im = impMarks(l.id);
       if (has) count++;
       var imp = (im.task ? ' Important task to do.' : '') + (im.flag ? ' Important note.' : '');
-      var label = unitName(l.id) + ', ' + describe(l) + (has ? '. ' + stateWords(st) + '. ' + text.replace('\n', ', ') : '. No notes yet') + imp;
+      var words = isSingle(l) ? stateWords(st) : 'Upper: ' + levelWords(l.id, 'u') + '. Lower: ' + levelWords(l.id, 'l');
+      var label = unitName(l.id) + ', ' + describe(l) + (has ? '. ' + words + '. ' + text.replace('\n', ', ') : '. No notes yet') + imp;
+      var lo = levelColours(l.id, 'l'), up = isSingle(l) ? lo : levelColours(l.id, 'u');
       [pinBangs[l.id], chipBangs[l.id]].forEach(function (b) { if (!b) return; b.task.hidden = !im.task; b.flag.hidden = !im.flag; });
       chips[l.id].classList.toggle('marked', im.task || im.flag);
       [lotButtons[l.id], chips[l.id]].forEach(function (el) {
@@ -621,6 +645,8 @@
         el.classList.toggle('s-note', st.note);
         el.classList.toggle('s-open', st.list === 'open');
         el.classList.toggle('s-done', st.list === 'done');
+        el.style.setProperty('--u1', up[0]); el.style.setProperty('--u2', up[1]);
+        el.style.setProperty('--l1', lo[0]); el.style.setProperty('--l2', lo[1]);
         el.setAttribute('aria-label', label);
       });
       chips[l.id].lastChild.textContent = text;
